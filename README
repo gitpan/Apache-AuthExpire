@@ -1,76 +1,71 @@
 Apache::AuthExpire module for use with a mod_perl enabled web server.
 
-Most Recent Modification:  06/18/2003
+Most Recent Modification:  07/29/2004
 
 Copyright (c) 2001 Jonathan J. Horner. All rights reserved. This program is
 free software; you can redistribute it and/or modify it under the same terms as Perl itself. 
 
 1.  Purpose
 
-	As the title suggests, this PerlAuthenHandler will provide a means to set a server wide time out
-system for servers that contain sensitive data.  It does this by using file modification times in a 'times' 
-directory in <SERVERROOT>/conf/ to determine when an access_controlled request was made last, and if too 
-much time has passed since the last request, the module will return a status code of HTTP_UNAUTHORIZED to
-the browser to force a login.  It follows the rules of the AUTHENTICATION phase and standard
-PerlAuthenHandlers.
+As the title suggests, this PerlAuthenHandler will provide a means to set a server wide timeout
+system for servers that contain sensitive data.  It uses file modification times to determine when 
+the last access_controlled request was made, and returns HTTP_UNAUTHORIZED if the timeout limit has
+expired. It follows the rules of the Authentication phase and standard PerlAuthenHandlers.
 
 2.  Usage
 
 	The usage is pretty simple:
-		1.  Install module using 'perl Makefile.PL && make && make test && make install'.
+		1.  a. Install module using 'perl Makefile.PL && make && make test && make install'.
+		    b. Manually create an 'authexpire' directory in the <SERVERROOT>/logs directory,
+		       and give the web server user, (ie nobody), read/write access to it.
 
-		    (SHANNON NOTE:  This Makefile.PL uses ExtUtils::AutoInstall to check for the
+		    (INSTALLATION NOTE:  This Makefile.PL uses ExtUtils::AutoInstall to check for the
 		    existence of modperl on your machine.  It is important to note that you should 
 		    not allow the Makefile.PL to install modperl from CPAN if you are planning to 
 		    use modperl2.  Reason:  modperl2 is not yet available from CPAN.  You will need
 		    to download modperl2 from http://perl.apache.org and compile it yourself...)
-
+		   
 		2.  Place the following lines in your <SERVERROOT>/conf/httpd.conf file, where appropriate:
 			PerlAuthenHandler Apache::AuthExpire
 			PerlSetVar  DefaultLimit <number of seconds for default timeout>
-		3.  The following line, optional in your httpd.conf file, will turn on debugging reports to
-		    your error_log (set by the httpd.conf file):
-			PerlSetVar TIMEOUT_DEBUG 1
-		4.  The following lines allow site maintainers to turn off timeouts for a directory or 
-		    change the value.  The value of the TimeLimit directive must be less than the 
-		    DefaultLimit.  These are optional in the .htaccess file:
+		3.  The following lines allow site maintainers to manipulate timeouts, the location
+		    of the timeout file directory, and allow the use of a secondary authentication
+		    handler. These are optional in the .htaccess file:
+			PerlSetVar TimeFileDir '/path/to/alternate/timefile/dir'
+			PerlSetVar AllowAlternateAuth yes
 			PerlSetVar TimeLimit <number of seconds for this directory timeout>
-			PerlSetVar MODE Off
-		5.  After setting these, all directories will be subject to the PerlAuthenHandler if an
-		    .htaccess file is present, the AuthType must be set to 'Basic', the AuthName must be
-		    defined, at least one 'require' directive defined, and MODE is not set.
-		6.  Create a directory in your <SERVERROOT>/conf directory named 'times' and change 
-		    ownership to the user:group running the Apache child processes.
-		7.  Stop and restart the web server.
+			PerlSetVar TimeoutPurge <minutes>
+		4.  The following line, optional in your httpd.conf file, will turn on debugging reports to
+		    your error_log:
+			PerlSetVar TimeoutDebug 1
+		5.  After setting these variables, all directories will be subject to the PerlAuthenHandler 
+		    if a .htaccess file is present. AuthType must be set to 'Basic', AuthName defined, and 
+		    at least one 'require' directive defined.
+		6.  Stop and restart the web server.
 
 3.  Contact Information
 
-	I can be reached by email at jjhorner@bellsouth.net or jhorner@2jnetworks.com.  
-	Home page is http://www.2jnetworks.com/~jhorner/AuthExpire.html. 
+	I can be reached by email at speeves@erikin.com.  
+	Home page is http://search.cpan.org/~speeves/. 
 	Please send any bug reports to me at the above address.
-
-	(SHANNON NOTE:  I can't find JJ Horner at the website, and he hasn't responded to emails 
-	sent to his email addresses given...  Might be better to contact me at speeves@unt.edu
-	or contact the modperl@perl.apache.org mailing list.)
 
 4.  TODO List
 
 	* Add status codes to time files so that more intricate options can be added
 	* Rewrite so that instead of a 401 status response being returned(which isn't handled 
-	  well by all browsers), the serve will respond with a page html allowing another login.  
+	  well by all browsers), the serve will respond with a html page allowing another login.  
 	  This page will have to be addressed by browsers and should work better than a '401'.
 
 	  (SHANNON NOTE: This module does not timeout for either Konqueror, Netscape 7.0 or Mozilla browsers...
 	  Hmmm.... Does seem to work with IE and lynx... I haven't researched it completely, but it 
 	  seems that HTTP_UNAUTHORIZED is not sending the 401 Unauthorized that the mozilla/netscape and
 	  Konqueror browsers are expecting. JJ points to the modperl docs for explanation.) 
-
-	* Work on Makefile generation so that the module goes to <SERVERROOT>/lib/perl/Apache/
-	* General cleanup
-	* Generate better method of creating <SERVERROOT>/conf/times directory  
+	* Generate better method of creating <SERVERROOT>/logs/authexpire directory  
 
 5.  Credit Goes to:
 	- plaid from perlmonks.org (http://www.perlmonks.org/index.pl?node=plaid) for debugging code and 
 	  general help.
 	- merlyn (Randal Schwartz) from perlmonks.org (http://www.perlmonks.org/index.pl?node=merlyn) for
 	  general help and support.
+	- Brandon Willis <brandon@silverorb.net> aka bcw for the timeoutpurge patch, testing, and general
+	  repartee on making this module more robust.

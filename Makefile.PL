@@ -37,7 +37,7 @@
     );
 
     WriteMakefile(
-	AUTHOR          => 'J. J. Horner jjhorner@bellsouth.net and Shannon Eric Peevey (speeves@unt.edu)',
+	AUTHOR          => 'J. J. Horner jjhorner@bellsouth.net and Shannon Eric Peevey (speeves@erikin.com)',
 	ABSTRACT        => 'Apache::AuthExpire -- Sets a time limit on the amount of time an authenticated connection to the web server will be allowed to remain inactive',
 	NAME            => 'Apache::AuthExpire',
 	VERSION_FROM    => 'AuthExpire.pm',

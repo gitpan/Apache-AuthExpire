@@ -1,4 +1,34 @@
 Revision history for Perl extension Apache::AuthExpire
+0.39  Thursday July 29, 2004
+	- bcw - Modified to account for proxy redirection that could result in 
+          the get_remote_host() fctn always returning 127.0.0.1. 
+	  <changes noted below>
+  - bcw - I have modified the module to return DECLINED rather than 
+          OK. This allows other various authenTication schemes to operate.
+	  <changes noted below>
+  - bcw - Added a new configuration PerlSetVar variable "TimeoutPurge".
+          This variable specifies the number of hours to wait before 
+          considering a timeout file to be too old to have come from the 
+          same session. This allows for someone to successfully use the 
+          AuthExpire to implement session timeouts and clean up old 
+          authentication timeout files after an extended period of time has
+          elapsed.   
+  - speeves - updated my contact information and included Brandon's patches
+            - fixed README and added up-to-date information
+	    - Added PerlSetVar variable 'AllowAlternateAuth' 
+	      to allow for you to chain authenhandlers...
+	    - moved the dir_config variable declarations to the top of the
+	      handler subroutine and cleaned up the code that needed it in
+	      response to these changes
+	    - modified proxy patch to check for _any_ proxy server and return
+	      "real" client address
+	    - added PerlSetVar variable 'TimeFileDir' to allow you to 
+	      specify an alternate location for your timeout files
+	    - added a lot of documentation with more information on 
+	      each feature, as well as installation information.
+	    - changed the timeout file default directory to 
+	      <SERVERROOT>/logs/authexpire
+	    - updated the README to reflect the new changes.
 
 0.38  Tuesday July 15 2003
 	- replaced Apache::Constants::OK with OK for modperl1
