@@ -2,7 +2,7 @@ package Apache::AuthExpire;
 #file Apache/AuthExpire.pm
 #
 #	Author: J. J. Horner
-#	Version: 0.34 (09/06/2001)
+#	Version: 0.36 (09/07/2001)
 #	Usage:  see documentation
 #	Description:
 #		Small mod_perl handler to provide Athentication phase time outs for 
@@ -14,7 +14,7 @@ use Carp;
 use Apache::Constants qw(:common);
 use Apache::Log;
 
-our $VERSION = '0.34';
+our $VERSION = '0.36';
 
 sub handler {
 
@@ -22,6 +22,7 @@ sub handler {
 
     my $r = shift;
     my $log = $r->log;
+	return DECLINED unless $r->is_initial_req;
 
     #grab debug value from config files.
     #Sends 'debug' level messages to error_log when set. 
@@ -29,7 +30,7 @@ sub handler {
 
     if (defined ($r->dir_config('TIMEOUT_DEBUG'))) { 
         $DEBUG = $r->dir_config('TIMEOUT_DEBUG'); 
-        $log->debug("Debug value set to $DEBUG.");
+        $log->notice("Debug value set to $DEBUG.");
     }
 
     my ($res, $sent_pw) = $r->get_basic_auth_pw;
@@ -43,13 +44,17 @@ sub handler {
     # TimeLimit greater than default.  Can't have longer
     # time limits than max set by policy.
     
-    $limit = $r->dir_config('TimeLimit') if ($r->dir_config('TimeLimit'));
+    $limit = $r->dir_config('TimeLimit') if (defined($r->dir_config('TimeLimit')) && $r->dir_config('TimeLimit') > 1);
     $default = $r->dir_config('DefaultLimit');
-    $log->debug("Default Limit set to $default.") if ($DEBUG);
-    $log->debug("Time Limit for $request_line set to $limit") if ($DEBUG);
+    $log->notice("Default Limit set to $default.") if ($DEBUG);
 
-    $time_to_die = ($limit < $default) ? $limit : $default;
-
+	if (defined($limit)) {
+    	$time_to_die = ($limit < $default) ? $limit : $default;
+		$log->notice("Time Limit for $request_line set to $limit") if ($DEBUG);
+	} else {
+		$time_to_die = $default;
+	}	
+	
     # Do nothing if MODE set to 'Off'.
     return DECLINED if ($r->dir_config('MODE') eq 'Off');
 
@@ -59,21 +64,21 @@ sub handler {
     $realm =~ s/\//_/g;
     my $host = $r->get_remote_host();
     my $time_file = $r->server_root_relative("conf/times/$realm-$host.$user");
-    $log->debug("Time file set to $time_file") if ($DEBUG);
+    $log->notice("Time file set to $time_file") if ($DEBUG);
     if (-e $time_file) {   # if timestamp file exists, check time difference
         my $last_time = (stat($time_file))[9] 
             || $log->warn("Unable to get last modtime from file: $!");
 
-        my $time_delta = ($current_time - $last_time);
-        if ($time_to_die <=  $time_delta) {
-        # time delta >= specified time limit
+        my $time_delta = ($current_time - $last_time); # Determine time since last access
+        if ($time_to_die >  $time_delta) {
+        	# time delta = specified time limit
             open (TIME, ">$time_file") 
-                || $log->warn("Can't update timestamp on $time_file: $!";
+                || $log->warn("Can't update timestamp on $time_file: $!");
             close TIME;
             return OK;
 
         } else {  # time delta greater than TimeLimit
-            $log->debug("Time since last access: $time_delta") if ($DEBUG);
+            $log->notice("Time since last access: $time_delta") if ($DEBUG);
             $r->note_basic_auth_failure;
             unlink($time_file) or $log->warn("Can't unlink file: $!");
             return AUTH_REQUIRED;
