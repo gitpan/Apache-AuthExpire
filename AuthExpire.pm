@@ -2,7 +2,7 @@ package Apache::AuthExpire;
 #file Apache/AuthExpire.pm
 #
 #	Author: J. J. Horner
-#	Version: 0.30 (06/14/2000)
+#	Version: 0.33 (09/06/2001)
 #	Usage:  see documentation
 #	Description:
 #		Small mod_perl handler to provide Athentication phase time outs for 
@@ -12,62 +12,81 @@ package Apache::AuthExpire;
 use strict;
 use Carp;
 use Apache::Constants qw(:common);
+use Apache::Log;
 
-our $VERSION = '0.31';
+our $VERSION = '0.33';
 
 sub handler {
 
-        my $current_time = time();
+    my $current_time = time();    # Time will be used here :)
 
-        my $r = shift;
+    my $r = shift;
+    my $log = $r->log;
 
-	#grab debug value from config files.
-	#currently does nothing, but will provide debug information once I determine
-	# an adequate reporting method
+    #grab debug value from config files.
+    #Sends 'debug' level messages to error_log when set. 
+    my $DEBUG;
 
-	my $DEBUG;
+    if (defined ($r->dir_config('TIMEOUT_DEBUG'))) { 
+        $DEBUG = $r->dir_config('TIMEOUT_DEBUG'); 
+        $log->debug("Debug value set to $DEBUG.");
+    }
 
-	if (defined ($r->dir_config('TIMEOUT_DEBUG'))) {
-        	$DEBUG = $r->dir_config('TIMEOUT_DEBUG') || carp "Debug value set to $DEBUG.";
-	}
-        my ($res, $sent_pw) = $r->get_basic_auth_pw;
-        return $res if $res != OK;  # return not OK status if not OK
+    my ($res, $sent_pw) = $r->get_basic_auth_pw;
+    return $res if $res != OK;  # return not OK status if not OK
 
-	my ($limit, $default, $time_to_die);
-	
-	$limit = $r->dir_config('TimeLimit') if ($r->dir_config('TimeLimit'));
-	$default = $r->dir_config('DefaultLimit');
+    my ($limit, $default, $time_to_die);
+    my $request_line = $r->the_request;
 
-	$time_to_die = ($limit < $default) ? $limit : $default;
+    # Grab TimeLimit from .htaccess file (if available)
+    # or use DefaultLimit if TimeLimit not set or if
+    # TimeLimit greater than default.  Can't have longer
+    # time limits than max set by policy.
+    
+    $limit = $r->dir_config('TimeLimit') if ($r->dir_config('TimeLimit'));
+    $default = $r->dir_config('DefaultLimit');
+    $log->debug("Default Limit set to $default.") if ($DEBUG);
+    $log->debug("Time Limit for $request_line set to $limit") if ($DEBUG);
 
-        return DECLINED if ($r->dir_config('MODE'));  #do nothing if PerlSetVar TimeLimit not set.
+    $time_to_die = ($limit < $default) ? $limit : $default;
 
-        my $user = $r->connection->user;
-        my $realm = $r->auth_name();
-        $realm =~ s/\s+/_/g;
-	$realm =~ s/\//_/g;
-        my $host = $r->get_remote_host();
-        my $time_file = $r->server_root_relative("conf/times/$realm-$host.$user");
+    # Do nothing if MODE set to 'Off'.
+    return DECLINED if ($r->dir_config('MODE') eq 'Off');
 
-        if (-e $time_file) {   # if timestamp file exists, check time difference
-                my $last_time = (stat($time_file))[9] || carp "Unable to get last modtime from file: $!";
+    my $user = $r->connection->user;
+    my $realm = $r->auth_name();
+    $realm =~ s/\s+/_/g;
+    $realm =~ s/\//_/g;
+    my $host = $r->get_remote_host();
+    my $time_file = $r->server_root_relative("conf/times/$realm-$host.$user");
+    $log->debug("Time file set to $time_file") if ($DEBUG);
+    if (-e $time_file) {   # if timestamp file exists, check time difference
+        my $last_time = (stat($time_file))[9] 
+            || $log->warn("Unable to get last modtime from file: $!");
 
-                if ($time_to_die >=  ($current_time - $last_time)) {
-                        open (TIME, ">$time_file");
-                        close TIME;
-                        return OK;
+        my $time_delta = ($current_time - $last_time);
+        if ($time_to_die >=  $time_delta) {
+        # time delta <= specified time limit
+            open (TIME, ">$time_file") 
+                || $log->crit("Can't update timestamp on $time_file: $!";
+            close TIME;
+            return OK;
 
-                } else {  # if time delta greater than TimeLimit
-                        $r->note_basic_auth_failure;
-                        unlink($time_file) or carp "Can't unlink file: $!";
-                        return AUTH_REQUIRED;
-                }
-
-        } else {  # previous time delta greater than TimeLimit so file was unlinked
-                open (TIME, ">$time_file");
-                close TIME;
-                return OK;
+        } else {  # time delta greater than TimeLimit
+            $log->debug("Time since last access: $time_delta") if ($DEBUG);
+            $r->note_basic_auth_failure;
+            unlink($time_file) or $log->warn("Can't unlink file: $!");
+            return AUTH_REQUIRED;
         }
+
+    } else {  
+    # previous time delta greater than TimeLimit so file was unlinked
+    # or first time checking into server.
+        
+        open (TIME, ">$time_file") || $log->crit("Unable to create $time_file: $!\n");
+        close TIME;
+        return OK;
+    }
 }
 
 1;
@@ -81,16 +100,17 @@ Apache::AuthExpire - mod_perl handler to provide Authentication time limits on .
 
   In httpd.conf file:
 	PerlAuthenHandler Apache::AuthExpire
-	PerlSetVar DefaultLimit \<timeout in seconds\>
+	PerlSetVar DefaultLimit <timeout in seconds>
 
   Optional httpd.conf file entry:
-	PerlSetVar TIMEOUT_DEBUG 1
+	PerlSetVar TIMEOUT_DEBUG <0 || 1>
 	   Turns debugging on to print messages to server error_log
 
   Optional .htaccess entries: 
-	PerlSetVar TimeLimit \<timeout\>
+	PerlSetVar TimeLimit <time>
 	    or
-	PerlSetVar MODE off      #to turn off timeouts
+	PerlSetVar MODE Off        # to turn off timeouts
+                                # Will provide further methods later.
 
 =head1 DESCRIPTION
 
@@ -101,6 +121,11 @@ Apache::AuthExpire - mod_perl handler to provide Authentication time limits on .
   than the 'DefaultLimit', determines the length of time a user can be inactive.  This 
   handler can be set anywhere an AUTHENTICATION handler can be specified.
 
+=head2 Caveats
+
+  Does not work well with all browsers at this stage, please see
+  mod_perl guide for more information.
+  
 =head1 EXPORT
 
 None by default.
@@ -112,7 +137,7 @@ J. J. Horner jjhorner@bellsouth.net
 
 =head1 SEE ALSO
 
-perl(1).
+perl and mod_perl.
 
 =head1 LOCATION
 

@@ -1,6 +1,6 @@
 Apache::AuthExpire module for use with a mod_perl enabled web server.
 
-Most Recent Modification:  08/30/2001
+Most Recent Modification:  09/06/2001
 
 Copyright (c) 2001 Jonathan J. Horner. All rights reserved. This program is
 free software; you can redistribute it and/or modify it under the same terms as Perl itself. 
@@ -8,7 +8,7 @@ free software; you can redistribute it and/or modify it under the same terms as 
 1.  Purpose
 
 	As the title suggests, this PerlAuthenHandler will provide a means to set a server wide time out
-system for servers that contain sensitive data.  It does this by using file modification times in a times 
+system for servers that contain sensitive data.  It does this by using file modification times in a 'times' 
 directory in <SERVERROOT>/conf/ to determine when an access_controlled request was made last, and if too 
 much time has passed since the last request, the module will return a status code of AUTH_REQUIRED to
 the browser to force a login.  It follows the rules of the AUTHENTICATION phase and standard
@@ -38,18 +38,19 @@ PerlAuthenHandlers.
 
 3.  Contact Information
 
-	I can be reached by email at jjhorner@bellsouth.net or
-jhorner@2jnetworks.com.  Home page is
-http://www.2jnetworks.com/~jhorner/AuthExpire.html. 
+	I can be reached by email at jjhorner@bellsouth.net or jhorner@2jnetworks.com.  
+	Home page is http://www.2jnetworks.com/~jhorner/AuthExpire.html. 
 	Please send any bug reports to me at the above address.
 
 4.  TODO List
 
-	* Rewrite so that instead of a 401 (which isn't handled well by all browsers) with a page
-	  allowing another login.  This will have to be addressed by browsers and should work.
+	* Add status codes to time files so that more intricate options can be added
+	* Rewrite so that instead of a 401 status response being returned(which isn't handled 
+	  well by all browsers), the serve will respond with a page html allowing another login.  
+	  This page will have to be addressed by browsers and should work better than a '401'.
 	* Work on Makefile generation so that the module goes to <SERVERROOT>/lib/perl/Apache/
-	* Determine better debugging mode so that debug will actually be useful
 	* General cleanup
+	* make sure Apache::* dependencies are checked during install
 	* Generate better method of creating <SERVERROOT>/conf/times directory  
 
 5.  Credit Goes to:

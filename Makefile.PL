@@ -6,7 +6,7 @@ WriteMakefile(
     'AUTHOR'		=> 'J. J. Horner jjhorner@bellsouth.net',
     'NAME'		=> 'Apache::AuthExpire',
     'VERSION_FROM'	=> 'AuthExpire.pm', # finds $VERSION
-    'PREREQ_PM'		=> { }, # e.g., Module::Name => 1.1
+    'PREREQ_PM'		=> {Apache::Log}, # e.g., Module::Name => 1.1
     'INC'		=> Apache::src->new->inc,
 );
 
