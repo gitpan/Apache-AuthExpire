@@ -2,7 +2,7 @@ package Apache::AuthExpire;
 #file Apache/AuthExpire.pm
 #
 #	Author: J. J. Horner
-#	Version: 0.33 (09/06/2001)
+#	Version: 0.34 (09/06/2001)
 #	Usage:  see documentation
 #	Description:
 #		Small mod_perl handler to provide Athentication phase time outs for 
@@ -14,7 +14,7 @@ use Carp;
 use Apache::Constants qw(:common);
 use Apache::Log;
 
-our $VERSION = '0.33';
+our $VERSION = '0.34';
 
 sub handler {
 
@@ -65,10 +65,10 @@ sub handler {
             || $log->warn("Unable to get last modtime from file: $!");
 
         my $time_delta = ($current_time - $last_time);
-        if ($time_to_die >=  $time_delta) {
-        # time delta <= specified time limit
+        if ($time_to_die <=  $time_delta) {
+        # time delta >= specified time limit
             open (TIME, ">$time_file") 
-                || $log->crit("Can't update timestamp on $time_file: $!";
+                || $log->warn("Can't update timestamp on $time_file: $!";
             close TIME;
             return OK;
 

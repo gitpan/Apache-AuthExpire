@@ -1,5 +1,13 @@
 Revision history for Perl extension Apache::AuthExpire
 
+0.34  Friday September 7 12:50:00 2001
+	- Bug fix in time compare
+
+0.33  Thurs Sep 6 21:00:00 2001 
+	- Updated documentation
+	- Improved logging facilities (uses Apache::Log) 
+	- Improved logging facilities (uses Apache::Log) 
+
 0.31  Thurs Aug 30 18:35:00 2001
 	- Updated documentation, fixed pod
 
