@@ -3,7 +3,7 @@ package Apache::AuthExpire;
 #
 #	Author: J. J. Horner
 #       Revisions:  Shannon Eric Peevey <speeves@unt.edu>
-#	Version: 0.37 (06/19/2003)
+#	Version: 0.38 (07/15/2003)
 #	Usage:  see documentation
 #	Description:
 #		Small mod_perl handler to provide Authentication phase time outs for 
@@ -36,7 +36,7 @@ BEGIN {
         }
 }
 
-our $VERSION = '0.37';
+our $VERSION = '0.38';
 
 sub handler {
 
@@ -56,7 +56,7 @@ sub handler {
     }
 
     my ($res, $sent_pw) = $r->get_basic_auth_pw;
-    return $res if $res !=  (MP2 ? Apache::OK : Apache::Constants::OK);  # return not OK status if not OK
+    return $res if $res !=  (MP2 ? Apache::OK : OK);  # return not OK status if not OK
 
     my ($limit, $default, $time_to_die);
     my $request_line = $r->the_request;
@@ -97,7 +97,7 @@ sub handler {
             open (TIME, ">$time_file") 
                 || $log->warn("Can't update timestamp on $time_file: $!");
             close TIME;
-            return MP2 ? Apache::OK : Apache::Constants::OK;
+            return MP2 ? Apache::OK : OK;
 
         } else {  # time delta greater than TimeLimit
             $log->notice("Time since last access: $time_delta") if ($DEBUG);
@@ -112,7 +112,7 @@ sub handler {
         
         open (TIME, ">$time_file") || $log->crit("Unable to create $time_file: $!\n");
         close TIME;
-        return MP2 ? Apache::OK : Apache::Constants::OK;
+        return MP2 ? Apache::OK : OK;
     }
 }
 

@@ -1,5 +1,8 @@
 Revision history for Perl extension Apache::AuthExpire
 
+0.38  Tuesday July 15 2003
+	- replaced Apache::Constants::OK with OK for modperl1
+
 0.37  Thursday June 19 2003
         - Ported to work with modperl 1 and 2
  	- Rewrote Makefile.PL to check for install of
