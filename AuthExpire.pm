@@ -2,19 +2,41 @@ package Apache::AuthExpire;
 #file Apache/AuthExpire.pm
 #
 #	Author: J. J. Horner
-#	Version: 0.36 (09/07/2001)
+#       Revisions:  Shannon Eric Peevey <speeves@unt.edu>
+#	Version: 0.37 (06/19/2003)
 #	Usage:  see documentation
 #	Description:
-#		Small mod_perl handler to provide Athentication phase time outs for 
+#		Small mod_perl handler to provide Authentication phase time outs for 
 #		sensitive areas, per realm.  Still has a few issues, but nothing too 
 #		serious.
 
 use strict;
 use Carp;
-use Apache::Constants qw(:common);
-use Apache::Log;
+use mod_perl;
 
-our $VERSION = '0.36';
+# setting the constants to help identify which version of mod_perl
+# is installed
+use constant MP2 => ($mod_perl::VERSION >= 1.99);
+
+# test for the version of mod_perl, and use the appropriate libraries
+BEGIN {
+        if (MP2) {
+                require Apache::Const;
+                require Apache::Access;
+                require Apache::Connection;
+                require Apache::Log;
+                require Apache::RequestRec;
+                require Apache::RequestUtil;
+		require Apache::ServerUtil;
+                Apache::Const->import(-compile => 'HTTP_UNAUTHORIZED','OK','DECLINED');
+        } else {
+                require Apache::Constants;
+		require Apache::Log;
+                Apache::Constants->import('HTTP_UNAUTHORIZED','OK','DECLINED');
+        }
+}
+
+our $VERSION = '0.37';
 
 sub handler {
 
@@ -22,7 +44,7 @@ sub handler {
 
     my $r = shift;
     my $log = $r->log;
-	return DECLINED unless $r->is_initial_req;
+    return MP2 ? Apache::DECLINED : Apache::Constants::DECLINED unless $r->is_initial_req;
 
     #grab debug value from config files.
     #Sends 'debug' level messages to error_log when set. 
@@ -34,7 +56,7 @@ sub handler {
     }
 
     my ($res, $sent_pw) = $r->get_basic_auth_pw;
-    return $res if $res != OK;  # return not OK status if not OK
+    return $res if $res !=  (MP2 ? Apache::OK : Apache::Constants::OK);  # return not OK status if not OK
 
     my ($limit, $default, $time_to_die);
     my $request_line = $r->the_request;
@@ -56,32 +78,32 @@ sub handler {
 	}	
 	
     # Do nothing if MODE set to 'Off'.
-    return DECLINED if ($r->dir_config('MODE') eq 'Off');
+    return MP2 ? Apache::DECLINED : Apache::Constants::DECLINED if ($r->dir_config('MODE') eq 'Off');
 
-    my $user = $r->connection->user;
+    my $user = MP2 ? $r->user : $r->connection->user;
     my $realm = $r->auth_name();
     $realm =~ s/\s+/_/g;
     $realm =~ s/\//_/g;
-    my $host = $r->get_remote_host();
-    my $time_file = $r->server_root_relative("conf/times/$realm-$host.$user");
+    my $host = MP2 ? $r->connection->get_remote_host() : $r->get_remote_host();
+    my $time_file = MP2 ? Apache::server_root_relative($r->pool, "conf/times/$realm-$host.$user") :$r->server_root_relative("conf/times/$realm-$host.$user");
     $log->notice("Time file set to $time_file") if ($DEBUG);
     if (-e $time_file) {   # if timestamp file exists, check time difference
         my $last_time = (stat($time_file))[9] 
             || $log->warn("Unable to get last modtime from file: $!");
 
         my $time_delta = ($current_time - $last_time); # Determine time since last access
-        if ($time_to_die >  $time_delta) {
+       if ($time_to_die >  $time_delta) {
         	# time delta = specified time limit
             open (TIME, ">$time_file") 
                 || $log->warn("Can't update timestamp on $time_file: $!");
             close TIME;
-            return OK;
+            return MP2 ? Apache::OK : Apache::Constants::OK;
 
         } else {  # time delta greater than TimeLimit
             $log->notice("Time since last access: $time_delta") if ($DEBUG);
             $r->note_basic_auth_failure;
             unlink($time_file) or $log->warn("Can't unlink file: $!");
-            return AUTH_REQUIRED;
+            return  MP2 ? Apache::HTTP_UNAUTHORIZED : HTTP_UNAUTHORIZED;
         }
 
     } else {  
@@ -90,7 +112,7 @@ sub handler {
         
         open (TIME, ">$time_file") || $log->crit("Unable to create $time_file: $!\n");
         close TIME;
-        return OK;
+        return MP2 ? Apache::OK : Apache::Constants::OK;
     }
 }
 
@@ -138,7 +160,7 @@ None by default.
 
 =head1 AUTHOR
 
-J. J. Horner jjhorner@bellsouth.net
+J. J. Horner jjhorner@bellsouth.net and Shannon Eric Peevey <speeves@unt.edu>
 
 =head1 SEE ALSO
 
@@ -146,8 +168,7 @@ perl and mod_perl.
 
 =head1 LOCATION
 
-Can be downloaded from
-http://www.2jnetworks.com/~jhorner/Apache-AuthExpire.tar.gz
+Can be found on CPAN.
 
 =head1 CREDITS
 

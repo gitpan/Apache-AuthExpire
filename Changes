@@ -1,5 +1,11 @@
 Revision history for Perl extension Apache::AuthExpire
 
+0.37  Thursday June 19 2003
+        - Ported to work with modperl 1 and 2
+ 	- Rewrote Makefile.PL to check for install of
+	  modperl.  (Uses ExtUtils::AutoInstall)
+        - Updated the README to include new information
+	 
 0.36  Friday September 7 2001
 	- Bug fix in $log->debug() statements
 	- Bug fix in $time_to_die set

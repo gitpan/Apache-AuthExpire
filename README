@@ -1,6 +1,6 @@
 Apache::AuthExpire module for use with a mod_perl enabled web server.
 
-Most Recent Modification:  09/06/2001
+Most Recent Modification:  06/18/2003
 
 Copyright (c) 2001 Jonathan J. Horner. All rights reserved. This program is
 free software; you can redistribute it and/or modify it under the same terms as Perl itself. 
@@ -10,7 +10,7 @@ free software; you can redistribute it and/or modify it under the same terms as 
 	As the title suggests, this PerlAuthenHandler will provide a means to set a server wide time out
 system for servers that contain sensitive data.  It does this by using file modification times in a 'times' 
 directory in <SERVERROOT>/conf/ to determine when an access_controlled request was made last, and if too 
-much time has passed since the last request, the module will return a status code of AUTH_REQUIRED to
+much time has passed since the last request, the module will return a status code of HTTP_UNAUTHORIZED to
 the browser to force a login.  It follows the rules of the AUTHENTICATION phase and standard
 PerlAuthenHandlers.
 
@@ -18,6 +18,13 @@ PerlAuthenHandlers.
 
 	The usage is pretty simple:
 		1.  Install module using 'perl Makefile.PL && make && make test && make install'.
+
+		    (SHANNON NOTE:  This Makefile.PL uses ExtUtils::AutoInstall to check for the
+		    existence of modperl on your machine.  It is important to note that you should 
+		    not allow the Makefile.PL to install modperl from CPAN if you are planning to 
+		    use modperl2.  Reason:  modperl2 is not yet available from CPAN.  You will need
+		    to download modperl2 from http://perl.apache.org and compile it yourself...)
+
 		2.  Place the following lines in your <SERVERROOT>/conf/httpd.conf file, where appropriate:
 			PerlAuthenHandler Apache::AuthExpire
 			PerlSetVar  DefaultLimit <number of seconds for default timeout>
@@ -42,15 +49,24 @@ PerlAuthenHandlers.
 	Home page is http://www.2jnetworks.com/~jhorner/AuthExpire.html. 
 	Please send any bug reports to me at the above address.
 
+	(SHANNON NOTE:  I can't find JJ Horner at the website, and he hasn't responded to emails 
+	sent to his email addresses given...  Might be better to contact me at speeves@unt.edu
+	or contact the modperl@perl.apache.org mailing list.)
+
 4.  TODO List
 
 	* Add status codes to time files so that more intricate options can be added
 	* Rewrite so that instead of a 401 status response being returned(which isn't handled 
 	  well by all browsers), the serve will respond with a page html allowing another login.  
 	  This page will have to be addressed by browsers and should work better than a '401'.
+
+	  (SHANNON NOTE: This module does not timeout for either Konqueror, Netscape 7.0 or Mozilla browsers...
+	  Hmmm.... Does seem to work with IE and lynx... I haven't researched it completely, but it 
+	  seems that HTTP_UNAUTHORIZED is not sending the 401 Unauthorized that the mozilla/netscape and
+	  Konqueror browsers are expecting. JJ points to the modperl docs for explanation.) 
+
 	* Work on Makefile generation so that the module goes to <SERVERROOT>/lib/perl/Apache/
 	* General cleanup
-	* make sure Apache::* dependencies are checked during install
 	* Generate better method of creating <SERVERROOT>/conf/times directory  
 
 5.  Credit Goes to:
